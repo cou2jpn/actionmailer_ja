@@ -56,20 +56,28 @@ module ActionMailer
       create_mail_without_ja
       (@mail.parts.empty? ? [@mail] : @mail.parts).each { |part|
         if part.content_type == 'text/plain' || part.content_type == 'text/html'
-          if ((!gettext?) || (gettext? && Locale.get.language == "ja"))
-            if mobile_address? && @mobile_address.softbank?
-              part.charset = 'utf-8'
-              part.body = NKF.nkf('-w', part.body)
-              part.transfer_encoding = '8bit'
-            else
-              part.charset = 'iso-2022-jp'
-              part.body = NKF.nkf('-j --oc=CP50220', part.body)
-              part.transfer_encoding = '7bit'
-            end
-          end
+          encode_parts(part)
+        elsif part.content_type == 'multipart/alternative'
+          part.parts.each { |part|
+            encode_parts(part)
+          }
         end
       }
       @mail
+    end
+
+    def encode_parts(part)
+      if ((!gettext?) || (gettext? && Locale.get.language == "ja"))
+        if mobile_address? && @mobile_address.softbank?
+          part.charset = 'utf-8'
+          part.body = NKF.nkf('-w', part.body)
+          part.transfer_encoding = '8bit'
+        else
+          part.charset = 'iso-2022-jp'
+          part.body = NKF.nkf('-j --oc=CP50220', part.body)
+          part.transfer_encoding = '7bit'
+        end
+      end
     end
 
     # 携帯メールアドレスの場合、view テンプレートを変更します。
@@ -178,5 +186,6 @@ module ActionMailer
       /(.*?)<(.*?)>/ =~ recipient
       return $& ? $2 : recipient
     end
+
   end
 end
