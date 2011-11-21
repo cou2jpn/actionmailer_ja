@@ -39,12 +39,19 @@ module ActionMailer
 
     def quote_if_necessary_with_ja(text, charset)
       text = replace_safe_char(text) if auto_replace_safe_char
-      if mobile_address? && @mobile_address.softbank?
-        charset = 'utf-8'
-      elsif charset == 'iso-2022-jp'
-        text = NKF.nkf('-jW -m0 --oc=CP50220', text).strip
+      #Bail out the defect of StarOffice21 mial client.
+      if auto_base64_encode
+        NKF.nkf('-jW -m0 --oc=CP50220', text).strip
+      else
+        quote_if_necessary_without_ja(text, charset)
       end
-      return quote_if_necessary_without_ja(text, charset)
+      #The following code is correct.
+      # if mobile_address? && @mobile_address.softbank?
+      #   charset = 'utf-8'
+      # elsif charset == 'iso-2022-jp'
+      #   text = NKF.nkf('-jW -m0 --oc=CP50220', text).strip
+      # end
+      # return quote_if_necessary_without_ja(text, charset)
     end
 
     # Locale があるかどうかで GetText が読み込まれたかを判断する
